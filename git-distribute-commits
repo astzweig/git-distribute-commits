@@ -1,1 +1,10 @@
 #!/usr/bin/env zsh
+
+# =============
+# Utilities
+# =============
+
+function dateToTimestamp() {
+	local d1="$1"
+	date -j -f "%Y-%m-%dT%H:%M:%S" "$1" +%s 2> /dev/null
+}
