@@ -8,3 +8,19 @@ function dateToTimestamp() {
 	local d1="$1"
 	date -j -f "%Y-%m-%dT%H:%M:%S" "$1" +%s 2> /dev/null
 }
+
+function getDateDiffInDays() {
+	local d1="$1" d2="$2" result
+	[[ $# -eq 2 ]] || return 1
+
+	isNumberRegex='^([0-9]|[1-9][0-9]*)$'
+	[[ $d1 =~ $isNumberRegex ]] && (( $d1 >= 0 )) || return 2
+	[[ $d2 =~ $isNumberRegex ]] && (( $d2 >= 0 )) || return 3
+
+	if [[ $((d1 - d2)) -gt 0 ]]; then
+		(( result = d1 - d2 ))
+	else
+		(( result = d2 - d1 ))
+	fi
+	echo $(( $result / 86400 ))
+}
