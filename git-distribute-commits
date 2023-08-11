@@ -30,3 +30,8 @@ function getAmountOfLinesInVar() {
 	local lines=(${(f)${(P)varname}})
 	echo ${#lines}
 }
+
+function sortLinesInVarLexicographically() {
+	local varname=$1
+	typeset -g ${varname}=${(F)${(if)${(P)varname}}}
+}
