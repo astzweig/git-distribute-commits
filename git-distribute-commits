@@ -35,3 +35,13 @@ function sortLinesInVarLexicographically() {
 	local varname=$1
 	typeset -g ${varname}=${(F)${(if)${(P)varname}}}
 }
+
+function selectFirstNLinesOfVar() {
+	local varname=$1 n=$2
+	[[ -n $varname ]] || return 1
+	[[ -v $varname ]] || return 2
+	[[ -n $n ]] || return 0
+	local lines=(${(f)${(P)varname}})
+	[[ ${#lines} -gt $n ]] || return 0
+	typeset -g ${varname}=${(F)lines[1,$n]}
+}
