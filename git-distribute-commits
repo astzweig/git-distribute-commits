@@ -45,3 +45,11 @@ function selectFirstNLinesOfVar() {
 	[[ ${#lines} -gt $n ]] || return 0
 	typeset -g ${varname}=${(F)lines[1,$n]}
 }
+
+function getLastLineOfVar() {
+	local varname=$1
+	[[ $# -eq 1 ]] || return 1
+	[[ -v $varname ]] || return 2
+	local lines=(${(f)${(P)varname}})
+	echo ${lines[-1]}
+}
