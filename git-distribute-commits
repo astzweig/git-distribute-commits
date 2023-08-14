@@ -53,3 +53,12 @@ function getLastLineOfVar() {
 	local lines=(${(f)${(P)varname}})
 	echo ${lines[-1]}
 }
+
+function ensureVarHasAtLeastNLines() {
+	local varname=$1 n=$2
+	local lines=(${(f)${(P)varname}})
+	[[ $n -gt 0 ]] || return 0
+	if [[ ${#lines} -lt $n ]]; then
+		typeset -g ${varname}="`printf "${(P)varname}\n%.0s" {1..$n}`"
+	fi
+}
