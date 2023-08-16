@@ -67,9 +67,99 @@ function ensureVarHasAtLeastNLines() {
 # End Utilities
 # =============
 
+function sortIdealCommitDates() {
+	sortLinesInVarLexicographically idealCommitDates
+}
+
+function repeatCommitDatesIfNecessary() {
+	local linesNecessary=`getAmountOfLinesInVar unpublishedCommits`
+	local linesAvailable=`getAmountOfLinesInVar idealCommitDates`
+	ensureVarHasAtLeastNLines idealCommitDates $linesNecessary
+	selectFirstNLinesOfVar idealCommitDates $linesNecessary
+}
+
+function getDateDiffToNowInDays() {
+	local d1= now=`date -j +%s`
+	d1=`dateToTimestamp $1`
+	[[ $? -eq 0 ]] || { print "Could not convert date $1 to timestamp. Aborting." >&2; exit 30 }
+	getDateDiffInDays $d1 $now
+}
+
+function getGitHubContributions() {
+	local fromDate="$1"
+	local aYearAgo="`date -j -v-365d -Iseconds | cut -d+ -f1`"
+	[[ -z $fromDate || `getDateDiffToNowInDays "${fromDate}"` -gt 364 ]] && fromDate=$aYearAgo
+	gh api graphql -f \
+	query="
+	{
+		viewer {
+			contributionsCollection(from: \"${fromDate}Z\" , to: \"`date -j -I`T23:59:59Z\") {
+				contributionCalendar {
+					weeks {
+						contributionDays {
+							date
+							contributionCount
+						}
+						firstDay
+					}
+				}
+			}
+		}
+	}" \
+	--jq '[.data.viewer.contributionsCollection.contributionCalendar.weeks.[].contributionDays.[]] | sort_by(.contributionCount) | .[] | "\(.date)"'
+}
+
+function getDateOfLastPublishedParent() {
+	local parentOfLastCommit=`git log --format="%P" -n 1 $(getLastLineOfVar unpublishedCommits)`
+	[[ -n $parentOfLastCommit ]] || return
+	git log --format='%aI' $parentOfLastCommit | cut -d+ -f1
+}
+
+function getUnpublishedCommits() {
+	unpublishedCommits=`git rev-list '@{push}..'`
+	[[ $? -eq 0 ]] || { print "No upstream configured for branch. Aborting." >&2; exit 20 }
+	[[ -n $unpublishedCommits ]] || { print "No unpublished commits."; exit 0 }
+}
+
+function isGitDirectory() {
+	git status &> /dev/null
+}
+
+function changeGitCommitDate() {
+	local newdatesfile=$1 NEW_DATE NEW_FILE_CONTENT
+	NEW_DATE="`head -1 "$newdatesfile"`"
+	NEW_FILE_CONTENT="`tail -n +2 "$newdatesfile"`"
+	echo "$NEW_FILE_CONTENT" > "$newdatesfile"
+
+	[[ "`printf '%.1s\n' "$GIT_AUTHOR_DATE"`" == '@' ]] && {
+		GIT_AUTHOR_DATE="`echo "${GIT_AUTHOR_DATE:1}" | cut -d' ' -f1 `"
+		GIT_AUTHOR_DATE="`date -j -Iseconds -f '%s' "${GIT_AUTHOR_DATE}" | cut -d+ -f1`"
+	}
+	export GIT_AUTHOR_DATE="`echo $GIT_AUTHOR_DATE | cut -d+ -f1 | sed "s/.*T/${NEW_DATE}T/"`"
+	export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+}
+
 function main() {
+	local unpublishedCommits idealCommitDates
+	isGitDirectory || { print "Not a git directory. Aborting."; exit 1 }
+	getUnpublishedCommits
+
+	idealCommitDates=$(getGitHubContributions "`getDateOfLastPublishedParent`")
+	[[ $? -eq 0 && -n $idealCommitDates ]] || { print "Could not get ideal commit dates from GitHub. Aborting." >&2; exit 3 }
+
+	repeatCommitDatesIfNecessary
+	sortIdealCommitDates
+	newdatesfile=`mktemp`
+	trap 'rm $newdatesfile' INT TERM EXIT
+	echo ${idealCommitDates} > $newdatesfile
+
+	FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force \
+		--setup "`whence -f changeGitCommitDate`" \
+		--env-filter "changeGitCommitDate \"$newdatesfile\""\
+		-- \
+		'@{push}..'
 }
 
 if [[ "${ZSH_EVAL_CONTEXT}" == toplevel ]]; then
-	main "$@"
+	newdatesfile= main "$@"
 fi
