@@ -115,8 +115,16 @@ function getDateOfLastPublishedParent() {
 	git log --format='%aI' $parentOfLastCommit | cut -d+ -f1
 }
 
+function getBranchExclusiveRevListArgs() {
+	local currentBranch branches remoteBranches
+	currentBranch=`git branch --show-current`
+	branches=`git branch | grep -v $currentBranch | sed -e 's/^ */\^/'`
+	remoteBranches=`git branch -r | grep -v $currentBranch | sed -e 's/^ */\^/'`
+	revListArgs+=($currentBranch $branches $remoteBranches)
+}
+
 function getUnpublishedCommits() {
-	unpublishedCommits=`git rev-list '@{push}..'`
+	unpublishedCommits=`git rev-list ${revListArgs}`
 	[[ $? -eq 0 ]] || { print "No upstream configured for branch. Aborting." >&2; exit 20 }
 	[[ -n $unpublishedCommits ]] || { print "No unpublished commits."; exit 0 }
 }
@@ -140,8 +148,9 @@ function changeGitCommitDate() {
 }
 
 function main() {
-	local unpublishedCommits idealCommitDates
+	local unpublishedCommits idealCommitDates revListArgs=()
 	isGitDirectory || { print "Not a git directory. Aborting."; exit 1 }
+	getBranchExclusiveRevListArgs
 	getUnpublishedCommits
 
 	idealCommitDates=$(getGitHubContributions "`getDateOfLastPublishedParent`")
@@ -157,7 +166,7 @@ function main() {
 		--setup "`whence -f changeGitCommitDate`" \
 		--env-filter "changeGitCommitDate \"$newdatesfile\""\
 		-- \
-		'@{push}..'
+		${revListArgs}
 }
 
 if [[ "${ZSH_EVAL_CONTEXT}" == toplevel ]]; then
