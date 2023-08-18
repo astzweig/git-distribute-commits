@@ -124,7 +124,7 @@ function getBranchExclusiveRevListArgs() {
 }
 
 function getUnpublishedCommits() {
-	unpublishedCommits=`git rev-list ${revListArgs}`
+	unpublishedCommits=`git rev-list ${revListArgs} 2> /dev/null`
 	[[ $? -eq 0 ]] || { print "No upstream configured for branch. Aborting." >&2; exit 20 }
 	[[ -n $unpublishedCommits ]] || { print "No unpublished commits."; exit 0 }
 }
@@ -133,18 +133,34 @@ function isGitDirectory() {
 	git status &> /dev/null
 }
 
+function mergeIdealCommitDatesWithRealCommitDates() {
+	local index unpublishedCommit idealCommitDate realCommitDate
+	local unpublishedCommitsList=(${(f)unpublishedCommits}) idealCommitDatesList=(${(f)idealCommitDates})
+
+	[[ ${#unpublishedCommitsList} == ${#idealCommitDatesList} ]] || {
+		print "Amount of Unpublished commits (${#unpublishedCommitsList}) does not equal amount of ideal commit dates (${#idealCommitDatesList}). Aborting." >&2
+		exit 40
+	}
+
+	index=1
+	while [[ $index -le ${#unpublishedCommitsList} ]]; do
+		unpublishedCommit=${unpublishedCommitsList[$index]}
+		idealCommitDate=${idealCommitDatesList[$index]}
+		idealCommitDatesList+=([$index]="`git log --format=%aI -1 $unpublishedCommit | cut -d+ -f1 | sed "s/.*T/${idealCommitDate}T/"`")
+		(( index += 1 ))
+	done
+
+	idealCommitDates=${(F)idealCommitDatesList}
+}
+
 function changeGitCommitDate() {
 	local newdatesfile=$1 NEW_DATE NEW_FILE_CONTENT
 	NEW_DATE="`head -1 "$newdatesfile"`"
 	NEW_FILE_CONTENT="`tail -n +2 "$newdatesfile"`"
 	echo "$NEW_FILE_CONTENT" > "$newdatesfile"
 
-	[[ "`printf '%.1s\n' "$GIT_AUTHOR_DATE"`" == '@' ]] && {
-		GIT_AUTHOR_DATE="`echo "${GIT_AUTHOR_DATE:1}" | cut -d' ' -f1 `"
-		GIT_AUTHOR_DATE="`date -j -Iseconds -f '%s' "${GIT_AUTHOR_DATE}" | cut -d+ -f1`"
-	}
-	export GIT_AUTHOR_DATE="`echo $GIT_AUTHOR_DATE | cut -d+ -f1 | sed "s/.*T/${NEW_DATE}T/"`"
-	export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+	export GIT_AUTHOR_DATE="$NEW_DATE"
+	export GIT_COMMITTER_DATE="$NEW_DATE"
 }
 
 function main() {
@@ -157,6 +173,7 @@ function main() {
 	[[ $? -eq 0 && -n $idealCommitDates ]] || { print "Could not get ideal commit dates from GitHub. Aborting." >&2; exit 3 }
 
 	repeatCommitDatesIfNecessary
+	mergeIdealCommitDatesWithRealCommitDates
 	sortIdealCommitDates
 	newdatesfile=`mktemp`
 	trap 'rm $newdatesfile' INT TERM EXIT
