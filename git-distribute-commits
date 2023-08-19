@@ -118,9 +118,9 @@ function getDateOfLastPublishedParent() {
 function getBranchExclusiveRevListArgs() {
 	local currentBranch branches remoteBranches
 	currentBranch=`git branch --show-current`
-	branches=`git branch | grep -v $currentBranch | sed -e 's/^ */\^/'`
-	remoteBranches=`git branch -r | grep -v $currentBranch | sed -e 's/^ */\^/'`
-	revListArgs+=($currentBranch $branches $remoteBranches)
+	branches=`git branch | sed 's/^.\{2\}//' | cut -d' ' -f1 | grep -v "^$currentBranch" | sed -e 's/^/\^/'`
+	remoteBranches=`git branch -r | sed 's/^.\{2\}//' | cut -d' ' -f1 | grep -v "^$currentBranch" | sed -e 's/^/\^/'`
+	revListArgs+=($currentBranch ${(f)branches} ${(f)remoteBranches})
 }
 
 function getUnpublishedCommits() {
