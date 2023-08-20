@@ -112,7 +112,7 @@ function getGitHubContributions() {
 function getDateOfLastPublishedParent() {
 	local parentOfLastCommit=`git log --format="%P" -n 1 $(getLastLineOfVar unpublishedCommits)`
 	[[ -n $parentOfLastCommit ]] || return
-	git log --format='%aI' $parentOfLastCommit | cut -d+ -f1
+	git log --format='%aI' -n 1 $parentOfLastCommit | cut -d+ -f1
 }
 
 function getBranchExclusiveRevListArgs() {
@@ -146,7 +146,7 @@ function mergeIdealCommitDatesWithRealCommitDates() {
 	while [[ $index -le ${#unpublishedCommitsList} ]]; do
 		unpublishedCommit=${unpublishedCommitsList[$index]}
 		idealCommitDate=${idealCommitDatesList[$index]}
-		idealCommitDatesList+=([$index]="`git log --format=%aI -1 $unpublishedCommit | cut -d+ -f1 | sed "s/.*T/${idealCommitDate}T/"`")
+		idealCommitDatesList+=([$index]="`git log --format=%aI -n 1 $unpublishedCommit | cut -d+ -f1 | sed "s/.*T/${idealCommitDate}T/"`")
 		(( index += 1 ))
 	done
 
