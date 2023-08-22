@@ -1,4 +1,4 @@
-# Git Distribute Commits
+# 🎄 Git Distribute Commits
 
 A git command to distribute the date of local (e.g. unpushed) git commits such
 that they best fill your GitHub contribution graph.
