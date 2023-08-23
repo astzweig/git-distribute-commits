@@ -14,3 +14,7 @@ the node that was pushed last to origin. That yields all the green nodes.
 ## Installation
 Just download [git-distribute-commits](git-distribute-commits) and place
 it in any directory that is part of your `PATH` environment variable.
+
+## Changelog
+This project keeps a [changelog](CHANGELOG.md) that adheres to
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
