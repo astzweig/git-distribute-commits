@@ -138,6 +138,20 @@ function checkGHTool() {
 	gh auth status --hostname github.com &> /dev/null || return 2
 }
 
+function printUsageIfRequested() {
+	[[ $1 == "-h" || $1 == "--help" ]] || return 1
+	cat <<- USAGE
+	Usage: $PROGNAME [OPTIONS]
+
+	A git command to distribute the date of local (e.g. unpushed) git commits such
+	that they best fill your GitHub contribution graph. This tool depends on
+	GitHub CLI tool.
+
+	Options:
+	  -h, --help  Show this help message.
+	USAGE
+}
+
 function mergeIdealCommitDatesWithRealCommitDates() {
 	local index unpublishedCommit idealCommitDate realCommitDate
 	local unpublishedCommitsList=(${(f)unpublishedCommits}) idealCommitDatesList=(${(f)idealCommitDates})
@@ -170,6 +184,7 @@ function changeGitCommitDate() {
 
 function main() {
 	local unpublishedCommits idealCommitDates revListArgs=()
+	printUsageIfRequested "$@" && exit 0
 	isGitDirectory || { print "Not a git directory. Aborting."; exit 1 }
 	checkGHTool || { print "Please check that gh tools is installed correctly and you are logged in. Aborting."; exit 2 }
 	getBranchExclusiveRevListArgs
@@ -193,5 +208,6 @@ function main() {
 }
 
 if [[ "${ZSH_EVAL_CONTEXT}" == toplevel ]]; then
+	PROGNAME=${0:t}
 	newdatesfile= main "$@"
 fi
