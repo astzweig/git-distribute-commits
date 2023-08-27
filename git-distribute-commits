@@ -133,6 +133,11 @@ function isGitDirectory() {
 	git status &> /dev/null
 }
 
+function checkGHTool() {
+	whence gh &> /dev/null || return 1
+	gh auth status --hostname github.com &> /dev/null || return 2
+}
+
 function mergeIdealCommitDatesWithRealCommitDates() {
 	local index unpublishedCommit idealCommitDate realCommitDate
 	local unpublishedCommitsList=(${(f)unpublishedCommits}) idealCommitDatesList=(${(f)idealCommitDates})
@@ -166,6 +171,7 @@ function changeGitCommitDate() {
 function main() {
 	local unpublishedCommits idealCommitDates revListArgs=()
 	isGitDirectory || { print "Not a git directory. Aborting."; exit 1 }
+	checkGHTool || { print "Please check that gh tools is installed correctly and you are logged in. Aborting."; exit 2 }
 	getBranchExclusiveRevListArgs
 	getUnpublishedCommits
 
