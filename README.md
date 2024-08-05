@@ -17,6 +17,13 @@ it in any directory that is part of your `PATH` environment variable.
 
 You will also need [GitHub CLI](https://cli.github.com) tool.
 
+### Using Homebrew
+You can install `git-distribute-commits` using Homebrew:
+
+```sh
+> brew install astzweig/formulae/git-distribute-commits
+```
+
 ## Changelog
 This project keeps a [changelog](CHANGELOG.md) that adheres to
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
