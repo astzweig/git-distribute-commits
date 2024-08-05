@@ -24,6 +24,13 @@ You can install `git-distribute-commits` using Homebrew:
 > brew install astzweig/formulae/git-distribute-commits
 ```
 
+## Usage
+Run the tool at the top level directory of your `git` repository:
+
+```sh
+> git distribute-commits
+```
+
 ## Changelog
 This project keeps a [changelog](CHANGELOG.md) that adheres to
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).

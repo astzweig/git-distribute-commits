@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added Homebrew installation instruction to README.md.
+- Added usage section to README.md.
 
 ## [1.0.0] - 2023-08-26
 
