@@ -22,3 +22,11 @@ jobs:
         with:
           body: ${{ steps.query-release-info.outputs.release-notes }}
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Send repository dispatch to Homebrew tap of Astzweig
+        run: |
+          curl -XPOST \
+          -H "Authorization: Bearer ${{ secrets.HOMEBREW_FORMULAE_TOKEN }}" \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/repos/astzweig/homebrew-formulae/actions/workflows/bumpnbottle.yml/dispatches \
+          --data '{"ref":"main", "inputs": {"formula": "git-distribute-commits"}}'
